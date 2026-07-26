@@ -1,0 +1,3 @@
+# Package Testr (PT)
+
+Test your NPM packages before publishing...

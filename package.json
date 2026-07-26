@@ -1,0 +1,27 @@
+{
+  "name": "@bananacool467/package-testr",
+  "version": "0.1.0-beta.1",
+  "description": "Test your NPM packages without publishing them.",
+  "keywords": [
+    "test",
+    "package"
+  ],
+  "license": "MIT",
+  "author": "bananacool467",
+  "type": "module",
+  "main": "pt.js",
+  "bin": {
+    "pt-build": "./pt.js",
+    "pt-link": "./pt.js",
+    "pt-auto-link": "./pt.js"
+  },
+  "scripts": {
+    "test": "npm link && pt-build && pt-link"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
