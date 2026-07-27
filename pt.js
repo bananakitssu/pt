@@ -141,14 +141,18 @@ async function build () {
   const prepare = pkg.scripts.prepare;
   const script = prepublishOnly ? prepublishOnly : (prepare ? prepare : null);
   if (script) {
-    console.log(` [|] Running \`${script}\` before copying files...`);
-    child_process.exec(script, (error, stdout, stderr) => {
-      if (error || stderr) {
-        const err = error ? error : (stderr ? stderr : "an unknown error");
-        throw new Error(`   [X] Failed to run script. Got: \n${err}\n Stopping...`);
+    console.log(` [|] Running script for \`prepublishOnly\`/\`prepare\` before copying files...`);
+    try {
+      const stdout = child_process.execSync(script, { stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' });
+      if (stdout && stdout.trim()) {
+        const __stdout = stdout.trim().split("\n");
+        for (const __stdout_item of __stdout)
+          console.log(`     [i] ${__stdout_item.trim()}`);
       }
-      console.log(`     [i] ${stdout.trim()}`);
-    });
+    } catch (error) {
+      const errMessage = error.stderr ? error.stderr.trim() : error.message;
+      throw new Error(`   [X] Failed to run script. Got: \n${errMessage}\n Stopping...`);
+    }
   }
   const __files = fs.readdirSync('.', { recursive: true });
   for (const file of __files) {
@@ -170,6 +174,7 @@ async function build () {
       fs.cpSync(file, path.join(__testPath, file), { recursive: true/*, filter: (src) => { return !src.includes('.git') && !src.includes(__testName); }*/ });
     }
   }
+  console.log(" [+] Successfully built package!");
 }
 
 async function main () {

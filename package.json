@@ -10,11 +10,13 @@
   "author": "bananacool467",
   "type": "module",
   "main": "pt.js",
+  "repository": "https://github.com/bananakitssu/pt",
   "bin": {
     "pt": "./pt.js"
   },
   "scripts": {
-    "test": "npm link && pt-build && pt-link"
+    "test": "npm link && pt-build && pt-link",
+    "prepublishOnly": "echo -e \"test\n\nnewline\""
   },
   "engines": {
     "node": ">=18.0.0"
