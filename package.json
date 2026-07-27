@@ -1,6 +1,6 @@
 {
   "name": "@bananacool467/pt",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Test your NPM packages without publishing them.",
   "keywords": [
     "test",
@@ -10,9 +10,12 @@
   "author": "bananacool467",
   "type": "module",
   "main": "pt.js",
-  "repository": "https://github.com/bananakitssu/pt",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bananakitssu/pt.git"
+  },
   "bin": {
-    "pt": "./pt.js"
+    "pt": "pt.js"
   },
   "scripts": {
     "test": "npm link && pt-build && pt-link",
