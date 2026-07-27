@@ -11,9 +11,7 @@
   "type": "module",
   "main": "pt.js",
   "bin": {
-    "pt-build": "./pt.js",
-    "pt-link": "./pt.js",
-    "pt-auto-link": "./pt.js"
+    "pt": "./pt.js"
   },
   "scripts": {
     "test": "npm link && pt-build && pt-link"
