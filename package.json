@@ -1,5 +1,5 @@
 {
-  "name": "@bananacool467/package-testr",
+  "name": "@bananacool467/pt",
   "version": "0.1.0-beta.1",
   "description": "Test your NPM packages without publishing them.",
   "keywords": [
