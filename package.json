@@ -18,7 +18,7 @@
     "pt": "pt.js"
   },
   "scripts": {
-    "test": "npm link && pt-build && pt-link",
+    "test": "npm link && pt build && pt link",
     "prepublishOnly": "echo -e \"test\n\nnewline\""
   },
   "engines": {

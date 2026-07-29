@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as child_process from 'node:child_process';
 import { fileURLToPath } from 'url';
+import { parsePatterns, isIgnored } from './glob-ignore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,7 @@ async function __loadPackage () {
     const data = JSON.parse(rawData);
     return data;
   } catch (error) {
-    console.error("Error reading file:", error);
+    console.error("Error reading file: ", error);
     return {};
   }
 }
@@ -35,7 +36,7 @@ async function __generatePackageTestName () {
     __new = `pack${__new}`
     return __new;
   } else {
-    let __new = `pack${__name}`;
+    let __new = `pack:${__name}`;
     return __new;
   }
 }
@@ -62,83 +63,29 @@ async function __parseIgnore (name) {
         'v': name
       }
     ];
-  try {
-    const rawData = fs.readFileSync(__1 ? __resolved : __resolved2, 'utf8');
-    const data = rawData.split("\n");
-    let filteredData = [];
-    for (const ignored of data) {
-      if (ignored == '')
-        continue;
-      filteredData.push(ignored);
-    }
-    let parsed = [
-      {
-        'dI': false,
-        'iD': true,
-        'v': '.git'
-      },
-      {
-        'dI': false,
-        'iD': true,
-        'v': name
-      }
-    ];
-    for (const item of filteredData) {
-      let __dontIgnore = false;
-      let __isDir = false;
-      if (item.startsWith("!"))
-        __dontIgnore = true;
-      let __ = item.replace("!", "");
-      let __resolved3 = path.resolve(__);
-      if (fs.existsSync(__resolved3)) {
-        const stats = fs.statSync(__resolved3);
-        __isDir = stats.isDirectory();
-      }
-      parsed.push({
-        "dI": __dontIgnore,
-        "iD": __isDir,
-        "v": __
-      })
-    }
-    return parsed;
-  } catch (error) {
-    console.error("Error reading file:", error);
-    return [
-      {
-        'dI': false,
-        'iD': true,
-        'v': '.git'
-      },
-      {
-        'dI': false,
-        'iD': true,
-        'v': name
-      }
-    ];
-  }
+  const patterns = parsePatterns(fs.readFileSync(__1 ? __resolved : __resolved2, 'utf8'));
+  patterns.push(...parsePatterns('.git\n' + name));
+  return patterns;
 }
 
 async function build () {
   const __testName = await __generatePackageTestName();
   console.log(` [|] New testing folder: \`${__testName}\``);
-  const __testPath = path.join(__dirname, __testName);
+  const __testPath = path.join(process.cwd(), __testName);
   fs.mkdirSync(__testPath, { recursive: true });
   const parsedIgnore = await __parseIgnore(__testName);
+  const patterns = parsedIgnore;
   let files = 0;
-  let dirs = 0;
-  for (const item of parsedIgnore) {
-    if (item.iD && !item.dI) {
-      dirs++;
-    } else if (!item.iD && !item.dI) {
-      files++;
-    }
+  //let dirs = 0;
+  for (const item of patterns) {
+    files++;
   }
-  const s = files == 1 ? "file" : "files";
-  const s2 = dirs == 1 ? "directory" : "directories";
-  console.log(` [|] Ignoring ${files} ${s} and ${dirs} ${s2}`);
+  const s = files == 1 ? "item" : "items";
+  //const s2 = dirs == 1 ? "directory" : "directories";
+  console.log(` [|] Ignoring ${files} ${s}`); // and ${dirs} ${s2}`);
   const pkg = await __loadPackage();
-  const prepublishOnly = pkg.scripts.prepublishOnly;
-  const prepare = pkg.scripts.prepare;
+  const prepublishOnly = pkg.scripts?.prepublishOnly;
+  const prepare = pkg.scripts?.prepare;
   const script = prepublishOnly ? prepublishOnly : (prepare ? prepare : null);
   if (script) {
     console.log(` [|] Running script for \`prepublishOnly\`/\`prepare\` before copying files...`);
@@ -155,26 +102,31 @@ async function build () {
     }
   }
   const __files = fs.readdirSync('.', { recursive: true });
-  for (const file of __files) {
-    let skip = false;
-    for (const item of parsedIgnore) {
-      if (item.iD && !item.dI) {
-        if (file.startsWith(item.v)) {
-          skip = true;
-        }
-      } else if (!item.iD && !item.dI) {
-        if (file == item.v) {
-          skip = true;
-        }
-      }
-    }
-    if (skip) {
-      continue;
-    } else {
-      fs.cpSync(file, path.join(__testPath, file), { recursive: true/*, filter: (src) => { return !src.includes('.git') && !src.includes(__testName); }*/ });
-    }
+  const ignoredDirs = [];
+  let i = 0;
+  if (fs.existsSync(__testPath)) {
+    fs.rmSync(__testPath, { recursive: true, force: true });
+    console.log(" [-] Deleted cached package");
   }
-  console.log(" [+] Successfully built package!");
+  console.log(" [|] Copying...");
+  for (const file of __files) {
+    const posixFile = file.split(path.sep).join('/');
+
+    if (ignoredDirs.some(dir => posixFile.startsWith(dir + '/'))) continue;
+
+    if (isIgnored(posixFile, patterns)) {
+      const full = path.join(process.cwd(), file);
+      let isDir = false;
+      try { isDir = fs.statSync(full).isDirectory(); } catch {}
+      if (isDir) ignoredDirs.push(posixFile);
+      continue;
+    }
+
+    fs.cpSync(file, path.join(__testPath, file), { recursive: true });
+    console.log("     [|] " + file);
+    i++;
+  }
+  console.log(` [+] Successfully built package! Copied ${i} files.`);
 }
 
 async function main () {
@@ -184,8 +136,16 @@ async function main () {
     throw new Error("The package.json was not found. Try moving to the root directory of your project or run: npm init -y");
   if (command)
     console.log(" [|] Checking for `package.json...`");
-  if (command == "build")
-    build();
+  if (command == "build") {
+    build().catch(err => {
+      console.error(" [X] Build failed, error:");
+      const lines = err.message ? err.message.split('\n') : err.split('\n');
+      for (const line of lines) {
+        console.error("     " + line);
+      }
+      process.exit(1);
+    });
+  }
   if (!command)
     console.log("Usage:\n  build - Builds the NPM package");
 }
