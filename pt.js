@@ -146,6 +146,7 @@ async function main () {
     process.exit(1);
   }
   console.log(` [X] Not found in PT: ${command}`);
+  process.exit(1);
 }
 
 main();
