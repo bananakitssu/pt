@@ -26,5 +26,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@bananacool467/pt": "file:pack&bananacool467:pt"
   }
 }

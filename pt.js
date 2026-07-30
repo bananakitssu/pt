@@ -18,7 +18,7 @@ async function __loadPackage () {
     const data = JSON.parse(rawData);
     return data;
   } catch (error) {
-    console.error("Error reading file: ", error);
+    console.error("\x1b[31mError reading file: ", error);
     return {};
   }
 }
@@ -27,16 +27,22 @@ async function __pkgExists () {
   return ((await __loadPackage()) == "No package" ? false : true);
 }
 
-async function __generatePackageTestName () {
+async function __generatePackageTestName (retName = false) {
   const __name = (await __loadPackage()).name || "Unnamed";
+  const __regex = /@([^/]+)\/(.+?)(?=\s|$)/g; 
+
+  const matches = [...__name.matchAll(__regex)];
+
   if (__name.startsWith("@")) {
     let __new = __name;
     __new = __new.replace("@", "&");
     __new = __new.replace("/", ":");
     __new = `pack${__new}`
+    if (retName) return [__new, __name, `@${matches[0][1]}`, matches[0][2]];
     return __new;
   } else {
     let __new = `pack:${__name}`;
+    if (retName) return [__new, __name, null, matches[0][2]];
     return __new;
   }
 }
@@ -89,7 +95,8 @@ async function build () {
       }
     } catch (error) {
       const errMessage = error.stderr ? error.stderr.trim() : error.message;
-      throw new Error(`   [X] Failed to run script. Got: \n${errMessage}\n Stopping...`);
+      console.error(`   \x1b[31m[X] Failed to run script. Got: \n${errMessage}\n Stopping...`);
+      process.exit(1);
     }
   }
   const __files = fs.readdirSync('.', { recursive: true });
@@ -97,7 +104,7 @@ async function build () {
   let i = 0;
   if (fs.existsSync(__testPath)) {
     fs.rmSync(__testPath, { recursive: true, force: true });
-    console.log(" [-] Deleted cached package");
+    console.log(" \x1b[33m[-] Deleted cached package\x1b[0m");
   }
   console.log(" [|] Copying...");
   for (const file of __files) {
@@ -120,18 +127,65 @@ async function build () {
   console.log(` [+] Successfully built package! Copied ${i} files.`);
 }
 
+async function link () {
+  const __testName = await __generatePackageTestName(true);
+  const __testPath = path.join(process.cwd(), __testName[0]);
+  console.log(` [|] Looking for ${__testName[0]}...`);
+  if (!fs.existsSync(__testPath)) {
+    console.log(` \x1b[31m[X] The test path was not found. Run \`pt build\` first.`);
+    process.exit(1);
+  } else {
+    console.log(` [|] Found test folder`);
+  }
+  const __nodejs_modules = path.resolve("node_modules");
+  if (!__nodejs_modules) {
+    console.log(` \x1b[31m[X] node_modules was not found. Please run \`npm init -y\` and \`npm install\``);
+    process.exit(1);
+  }
+  let __packageDir;
+  if (__testName[2]) {
+    __packageDir = path.join(__nodejs_modules, __testName[2], __testName[3]);
+  } else {
+    __packageDir = path.join(__nodejs_modules, __testName[3]);
+  }
+  if (!fs.existsSync(__packageDir)) {
+    fs.mkdirSync(__packageDir, { recursive: true });
+    console.log(` [+] Created new package`);
+  }
+  fs.cpSync(__testPath, __packageDir, { recursive: true });
+  const __resolved = path.resolve('package.json');
+  const data = await __loadPackage();
+  const __relPath = path.relative(path.dirname(__resolved), __testPath).replace(/\\/g, '/');
+  if (!data.devDependencies) data.devDependencies = {};
+  data.devDependencies[__testName[1]] = `file:${__relPath}`;
+  fs.writeFileSync(__resolved, JSON.stringify(data, null, 2));
+  console.log(` [+] Finished linking ${__testName[1]}!`);
+}
+
 async function main () {
   const args = process.argv.slice(2);
   const command = args[0];
   if (!(await __pkgExists())) {
-    console.error("The package.json was not found. Try moving to the root directory of your project or run: npm init -y");
+    console.error("\x1b[31mThe package.json was not found. Try moving to the root directory of your project or run: npm init -y");
     process.exit(1);
   }
   if (command)
     console.log(" [|] Checking for `package.json...`");
   if (command == "build") {
     await build().catch(err => {
-      console.error(" [X] Build failed, error:");
+      console.error(" \x1b[31m[X] Build failed, error:");
+      const lines = err.message ? err.message.split('\n') : err.split('\n');
+      for (const line of lines) {
+        console.error("     " + line);
+      }
+      process.exit(1);
+    }).finally(() => {
+      process.exit(0);
+    });
+  }
+  if (command == "link") {
+    await link().catch(err => {
+      console.error(" \x1b[31m[X] Linking failed, error:");
       const lines = err.message ? err.message.split('\n') : err.split('\n');
       for (const line of lines) {
         console.error("     " + line);
@@ -142,10 +196,10 @@ async function main () {
     });
   }
   if (!command) {
-    console.log("Usage:\n  build - Builds the NPM package");
+    console.log("Usage:\n  build - Builds the NPM package\n  link - Links the package to the current project");
     process.exit(1);
   }
-  console.log(` [X] Not found in PT: ${command}`);
+  console.log(` \x1b[31m[X] Not found in PT: ${command}`);
   process.exit(1);
 }
 
