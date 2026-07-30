@@ -50,19 +50,10 @@ async function __parseIgnore (name) {
     __1 = false;
   if (!fs.existsSync(__resolved2))
     __2 = false;
-  if (!__1 && !__2)
-    return [
-      {
-        'dI': false,
-        'iD': true,
-        'v': '.git'
-      },
-      {
-        'dI': false,
-        'iD': true,
-        'v': name
-      }
-    ];
+  if (!__1 && !__2) {
+    const patterns = parsePatterns('.git\n' + name);
+    return patterns;
+  }
   const patterns = parsePatterns(fs.readFileSync(__1 ? __resolved : __resolved2, 'utf8'));
   patterns.push(...parsePatterns('.git\n' + name));
   return patterns;
@@ -123,7 +114,7 @@ async function build () {
     }
 
     fs.cpSync(file, path.join(__testPath, file), { recursive: true });
-    console.log("     [|] " + file);
+    console.log(`     [+] Copied ${file} to ${__testName}/${file}`);
     i++;
   }
   console.log(` [+] Successfully built package! Copied ${i} files.`);
@@ -132,22 +123,29 @@ async function build () {
 async function main () {
   const args = process.argv.slice(2);
   const command = args[0];
-  if (!(await __pkgExists()))
-    throw new Error("The package.json was not found. Try moving to the root directory of your project or run: npm init -y");
+  if (!(await __pkgExists())) {
+    console.error("The package.json was not found. Try moving to the root directory of your project or run: npm init -y");
+    process.exit(1);
+  }
   if (command)
     console.log(" [|] Checking for `package.json...`");
   if (command == "build") {
-    build().catch(err => {
+    await build().catch(err => {
       console.error(" [X] Build failed, error:");
       const lines = err.message ? err.message.split('\n') : err.split('\n');
       for (const line of lines) {
         console.error("     " + line);
       }
       process.exit(1);
+    }).finally(() => {
+      process.exit(0);
     });
   }
-  if (!command)
+  if (!command) {
     console.log("Usage:\n  build - Builds the NPM package");
+    process.exit(1);
+  }
+  console.log(` [X] Not found in PT: ${command}`);
 }
 
 main();
