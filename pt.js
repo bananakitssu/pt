@@ -94,7 +94,7 @@ async function build () {
       }
     } catch (error) {
       const errMessage = error.stderr ? error.stderr.trim() : error.message;
-      console.error(`   \x1b[31m[X] Failed to run script. Got: \n${errMessage}\n Stopping...`);
+      console.error(`   \x1b[31m[e] Failed to run script. Got: \n${errMessage}\n Stopping...`);
       process.exit(1);
     }
   }
