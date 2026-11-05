@@ -57,11 +57,11 @@ async function __parseIgnore (name) {
   if (!fs.existsSync(__resolved2))
     __2 = false;
   if (!__1 && !__2) {
-    const patterns = parsePatterns('.git\n' + name);
+    const patterns = parsePatterns('node_modules\n.git\n' + name);
     return patterns;
   }
   const patterns = parsePatterns(fs.readFileSync(__1 ? __resolved : __resolved2, 'utf8'));
-  patterns.push(...parsePatterns('.git\n' + name));
+  patterns.push(...parsePatterns('node_modules\n.git\n' + name));
   return patterns;
 }
 
