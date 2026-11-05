@@ -149,6 +149,10 @@ async function link () {
   } else {
     __packageDir = path.join(__nodejs_modules, __testName[3]);
   }
+  if (fs.existsSync(__packageDir)) {
+    fs.rmSync(__packageDir, { recursive: true, force: true });
+    console.log(` \x1b[33m[-] Deleted old cached package.\x1b[0m`);
+  }
   if (!fs.existsSync(__packageDir)) {
     fs.mkdirSync(__packageDir, { recursive: true });
     console.log(` [+] Created new package`);
