@@ -7,16 +7,16 @@ Test your NPM packages before publishing...
 
 Run into your project's root for NPM and install it:
 ```bash
-npm @bananacool467/pt
+npm i @bananacool467/pt
 ```
 It may create a command named `pt` if scripts is allowed or something like that.
 
-Then literally just build the package:
+Then literally just build your package:
 ```bash
 pt build
 ```
 
-Then link it. This will throw the package into NPM and install it's dependencies:
+Then link it. This will throw the package into `node_modules/`, then it'll update your `package.json` and install it's dependencies:
 ```bash
 pt link
 ```

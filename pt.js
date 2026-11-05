@@ -154,12 +154,19 @@ async function link () {
     console.log(` [+] Created new package`);
   }
   fs.cpSync(__testPath, __packageDir, { recursive: true });
+  console.log(` [+] Copied test folder into node_modules!`);
   const __resolved = path.resolve('package.json');
   const data = await __loadPackage();
   const __relPath = path.relative(path.dirname(__resolved), __testPath).replace(/\\/g, '/');
   if (!data.devDependencies) data.devDependencies = {};
   data.devDependencies[__testName[1]] = `file:${__relPath}`;
   fs.writeFileSync(__resolved, JSON.stringify(data, null, 2));
+  console.log(` [+] Updated package.json!`);
+  console.log(` [-] Installing dependencies...`);
+  child_process.execSync("npm install", {
+    stdio: "inherit"
+  });
+  console.log(` [~] Finished installing dependencies`);
   console.log(` [+] Finished linking ${__testName[1]}!`);
 }
 
