@@ -69,7 +69,6 @@ async function build () {
   const __testName = await __generatePackageTestName();
   console.log(` [|] New testing folder: \`${__testName}\``);
   const __testPath = path.join(process.cwd(), __testName);
-  fs.mkdirSync(__testPath, { recursive: true });
   const parsedIgnore = await __parseIgnore(__testName);
   const patterns = parsedIgnore;
   let files = 0;
@@ -106,6 +105,7 @@ async function build () {
     fs.rmSync(__testPath, { recursive: true, force: true });
     console.log(" \x1b[33m[-] Deleted cached package\x1b[0m");
   }
+  fs.mkdirSync(__testPath, { recursive: true });
   console.log(" [|] Copying...");
   for (const file of __files) {
     const posixFile = file.split(path.sep).join('/');
