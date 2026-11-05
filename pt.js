@@ -84,9 +84,10 @@ async function build () {
   const prepare = pkg.scripts?.prepare;
   const script = prepublishOnly ? prepublishOnly : (prepare ? prepare : null);
   if (script) {
-    console.log(` [|] Running script for \`prepublishOnly\`/\`prepare\` before copying files...`);
+    console.log(` [|] Running scripts for \`prepublishOnly\`/\`prepare\` before copying files...`);
     try {
       const stdout = child_process.execSync(script, { stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' });
+      console.log(` > ${script}`);
       if (stdout && stdout.trim()) {
         const __stdout = stdout.trim().split("\n");
         for (const __stdout_item of __stdout)
